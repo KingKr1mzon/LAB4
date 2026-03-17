@@ -10,47 +10,62 @@ type Tree =
     | Empty
     | Node of int * Tree * Tree
 
-/// f - функция, которая берет аккумулятор и значение узла, возвращая новый аккумулятор
+/// f - функция, которая берет аккумулятор и значение узла, возвращая новый аккумулятор.
 let rec treeFold f acc tree =
     match tree with
     | Empty -> acc
     | Node(value, left, right) ->
-        // Сначала сворачиваем левое поддерево
+        // Сначала сворачиваем левое поддерево.
         let accLeft = treeFold f acc left
-        // Применяем функцию к текущему значению
+        // Применяем функцию к текущему значению.
         let accCurrent = f accLeft value
-        // Затем сворачиваем правое поддерево
+        // Затем сворачиваем правое поддерево.
         treeFold f accCurrent right
 
-/// Функция для генерации дерева
+/// Функция вставки.
+let rec insert value tree =
+    match tree with
+    | Empty -> Node(value, Empty, Empty)
+    | Node(root, left, right) ->
+        if value < root then
+            Node(root, insert value left, right)
+        else
+            Node(root, left, insert value right)
+
+/// Генерация дерева.
 let rnd = Random()
-let rec generateRandomTree depth =
-    if depth <= 0 then
-        Empty
+let rec generateRandomTree n tree =
+    if n <= 0 then 
+        tree
     else
-        let value = rnd.Next(1, 6) 
-        Node(value, generateRandomTree (depth - 1), generateRandomTree (depth - 1))
+        let newValue = rnd.Next(1, 6)
+        generateRandomTree (n - 1) (insert newValue tree)
         
 /// Вывод дерева в консоль.
-let rec printTree indent tree =
+let rec printTree indent prefix tree =
     match tree with
     | Empty -> ()
     | Node(value, left, right) ->
-        printTree (indent + "    ") right
-        printfn "%s% i" indent value
-        printTree (indent + "    ") left
+        printTree (indent + "    ") " " right
+        printfn "%s%s%i" indent prefix value
+        printTree (indent + "    ") " " left
 
 [<EntryPoint>]
 let main _ =
-    let tree = generateRandomTree 3
+    // Генерация дерева из 10 элементов.
+    let tree = generateRandomTree 10 Empty
     
     printf "Введите искомый элемент: "
     
-    let target = int (Console.ReadLine()) // Искомый элемент
+    let target = int (Console.ReadLine())
     
-    printTree "" tree
+    printTree "" "" tree
     
-    let count = tree |> treeFold (fun acc x -> if x = target then acc + 1 else acc) 0
+    let count =
+        tree
+        |> treeFold
+             (fun acc x -> if x = target then acc + 1 else acc) 0
     
     printfn "Количество повторов %i в дереве: %d" target count
+    
     0
